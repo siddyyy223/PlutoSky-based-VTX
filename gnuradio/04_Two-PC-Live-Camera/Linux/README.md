@@ -143,8 +143,12 @@ sure it stopped, run `./mute_tx.sh` on PC A.
   rising. *Bad CRC packets* and *Lost video frames* should stay small.
 - **Receiver constellations (4 stages)** tab: the last plot (after the Costas loop)
   should show **four tight dots/clusters** when the link is good.
-- **RX Gain** slider (top): adjust it live. Lower it if the picture breaks up
-  with the boards close together; raise it if they are far apart.
+- **RX Gain** slider (top): adjust it live. If the status stays at *Waiting for
+  the RF signal*, raise it. Tested on the bench (antennas ~1 m apart, TX
+  attenuation 30 dB): 20 dB never locked, **45 dB locked within seconds** and ran
+  at a steady 10 fps. Lower it only if the picture breaks up with the antennas
+  almost touching.
+- The same status line is also printed in the terminal every 2 seconds.
 
 ## Settings
 
@@ -155,7 +159,7 @@ All settings are options on the run scripts. Nothing has to be edited.
 |---|---|---|---|
 | `--freq 2.0e9` | both | 2.0 GHz | radio frequency, **must be the same on both PCs** |
 | `--tx-attenuation 30` | tx | 30 dB | lower number = more power (e.g. 10–20 for longer distances) |
-| `--rx-gain 35` | rx | 35 dB | receiver gain at start (also the live slider) |
+| `--rx-gain 45` | rx | 45 dB | receiver gain at start (also the live slider); 45 tested at ~1 m with TX attenuation 30 |
 | `--source-mode test` | tx | camera | send a moving test pattern instead of the camera |
 | `--camera-name /dev/video2` | tx | `/dev/video0` | pick another camera (`ls /dev/video*` lists them) |
 | `--video-fps 10` | tx | 10 | frames per second (the link fits about 10 fps of 640×360) |
@@ -177,7 +181,7 @@ If the Pluto has a non-default address, give it explicitly:
 |---|---|
 | `No Pluto found` | Use the USB2.0/OTG port, wait 20 s, check `ip -br addr` shows a `192.168.2.x` interface, try another cable. |
 | `No camera (/dev/video*) found` | Plug in the webcam, check `ls /dev/video*`, close other programs using it (browser, Zoom, Cheese). |
-| Receiver shows *Waiting for the RF signal* | Transmitter not running, frequencies differ, or antennas not on TX1/RX1. |
+| Receiver shows *Waiting for the RF signal* | RX gain too low (most common: 20 dB was not enough at 1 m with TX attenuation 30 dB; 45 dB locked within seconds), transmitter not running, frequencies differ, or antennas not on TX1/RX1. |
 | Picture freezes, many *Bad CRC packets* | Signal too weak (raise RX gain / lower TX attenuation) or too strong (opposite, if boards are close). |
 | Window opens, then Python error mentioning `iio` | The Pluto was unplugged or is still booting; wait and restart. |
 | `setup_pc.sh` shows FAIL | Run `./setup_pc.sh` again (without `--check`) while online, and read the line that failed. |

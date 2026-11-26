@@ -57,7 +57,7 @@ def snippets_main_after_init(tb):
 
 class r2_camera_rx(gr.top_block, Qt.QWidget):
 
-    def __init__(self, freq=2.0e9, rx_uri='ip:192.168.2.1', rx_gain=35):
+    def __init__(self, freq=2.0e9, rx_uri='ip:192.168.2.1', rx_gain=45):
         gr.top_block.__init__(self, "PlutoSky VTX - Receiver (PC B)", catch_exceptions=True)
         Qt.QWidget.__init__(self)
         self.setWindowTitle("PlutoSky VTX - Receiver (PC B)")
@@ -600,7 +600,7 @@ def argument_parser():
         "--rx-uri", dest="rx_uri", type=str, default='ip:192.168.2.1',
         help="Set RX Pluto URI [default=%(default)r]")
     parser.add_argument(
-        "--rx-gain", dest="rx_gain", type=eng_float, default=eng_notation.num_to_str(float(35)),
+        "--rx-gain", dest="rx_gain", type=eng_float, default=eng_notation.num_to_str(float(45)),
         help="Set RX manual gain [dB] [default=%(default)r]")
     return parser
 

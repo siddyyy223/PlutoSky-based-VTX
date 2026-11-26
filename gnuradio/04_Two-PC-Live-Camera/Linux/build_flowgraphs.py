@@ -40,7 +40,7 @@ TX_PARAMS = {
 RX_PARAMS = {
     'rx_uri': ('str', 'ip:192.168.2.1', 'RX Pluto URI'),
     'freq': ('eng_float', '2.0e9', 'Carrier frequency [Hz]'),
-    'rx_gain': ('eng_float', '35', 'RX manual gain [dB]'),
+    'rx_gain': ('eng_float', '45', 'RX manual gain [dB]'),  # 45 locked on the bench, 20 did not
 }
 # Vendor name is a leftover from a USRP template. It is a live GUI slider, which is
 # kept; --rx-gain only sets its starting value (see SLIDER_INIT).

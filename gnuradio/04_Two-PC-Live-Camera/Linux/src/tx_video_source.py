@@ -287,6 +287,7 @@ class LiveQtBridge(QtCore.QObject):
         self.test_index=0
         self._stopping=False
         self._preview_kind=None
+        self._last_print=0.0
         self.ffmpeg=None
         self.ffmpeg_thread=None
 
@@ -372,7 +373,12 @@ class LiveQtBridge(QtCore.QObject):
             target=size if self.enlarge.isChecked() else QtCore.QSize(min(size.width(),self.pixmap.width()),min(size.height(),self.pixmap.height()))
             self.picture.setPixmap(self.pixmap.scaled(target,QtCore.Qt.KeepAspectRatio,QtCore.Qt.SmoothTransformation))
             self.last_size=render_key
-        self.status.setText(self.block.get_status())
+        status=self.block.get_status()
+        self.status.setText(status)
+        now=time.monotonic()
+        if now-self._last_print>=2.0:  # same status line in the terminal, every 2 s
+            self._last_print=now
+            print('['+('TX' if self.role=='tx' else 'RX')+' '+time.strftime('%H:%M:%S')+'] '+status,flush=True)
 
     def _test_tick(self):
         self.block.accept_image(live_test_image(self.test_index,self.block._width,self.block._height))
