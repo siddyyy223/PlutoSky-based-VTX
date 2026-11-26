@@ -74,8 +74,31 @@ To re-check later without installing anything: `./setup_pc.sh --check`.
    It prints the board's address, for example `ip:192.168.2.1`. If it says
    *No Pluto found*, follow the hints it prints.
 
-Both PCs can show the same address (`ip:192.168.2.1`). That's normal, because
-each PC sees only its own board.
+### TX and RX board labels
+
+The boards are labelled in `pluto_boards.conf` (already in the repository), so
+`run_tx.sh` always uses the TX board and `run_rx.sh` the RX board, even with
+both plugged into one PC:
+
+| Role | Board IP (`config.txt` on the board) |
+|---|---|
+| TX | `192.168.3.1` |
+| RX | `192.168.2.1` |
+
+A board is recognised by its **own IP address**, not its serial number. These
+PlutoSky boards are clones that report the **same serial number and MAC address**,
+so those can't tell them apart. `./find_pluto.sh --list` shows what is
+attached and which label each board has.
+
+To label a new or replaced board, plug in only that board and run
+`./label_pluto.sh tx` (or `rx`). If the other board is also plugged in and
+already labelled, the new one is picked automatically.
+
+Two boards plugged into the **same PC** must have different IP subnets. If
+`label_pluto.sh` reports that two boards use the same IP, change one. Open its
+USB drive (*PlutoSDR*) in the file manager and edit `config.txt`: in `[NETWORK]`
+set `ipaddr = 192.168.3.1` and `ipaddr_host = 192.168.3.10`. Save, eject the
+drive, and wait for the board to reboot.
 
 ## Step 4 — Start the RECEIVER first (PC B)
 
@@ -189,7 +212,9 @@ byte. It should print `PASS`. Measured: 149/149 frames (test pattern) and
 | File | What it is |
 |---|---|
 | `setup_pc.sh` | one-time install and check |
-| `find_pluto.sh` | prints the address of the attached Pluto |
+| `find_pluto.sh` | prints the address of the TX/RX board (`./find_pluto.sh tx`, `rx`, `--list`) |
+| `label_pluto.sh` | labels a board as TX or RX (saved in `pluto_boards.conf`) |
+| `pluto_boards.conf` | which board is TX and which is RX (by board IP) |
 | `run_tx.sh` / `run_rx.sh` | start the transmitter (PC A) / receiver (PC B) |
 | `mute_tx.sh` | emergency stop for the transmitter |
 | `r2_camera_tx.py`, `r2_camera_rx.py`, `*_epy_block_*.py` | the GNU Radio programs (generated, don't edit) |
