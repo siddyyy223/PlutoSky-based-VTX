@@ -4,5 +4,5 @@
 # still transmitting. run_tx.sh powers the TX LO up again when it starts.
 set -u
 cd "$(dirname "$0")"
-URI=$(./find_pluto.sh) || exit 1
+URI=$(./find_pluto.sh tx) || exit 1
 iio_attr -u "$URI" -c ad9361-phy altvoltage1 powerdown 1 >/dev/null && echo "TX muted on $URI"

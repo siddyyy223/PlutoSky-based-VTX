@@ -41,7 +41,7 @@ echo "== Checking hardware =="
 cams=$(ls /dev/video* 2>/dev/null | tr '\n' ' ')
 [[ -n "$cams" ]] && ok "camera devices: $cams(only needed on the transmitter PC)" \
                  || warn "no camera found (fine for the receiver PC)"
-if uri=$(./find_pluto.sh 2>/dev/null); then ok "Pluto found at $uri"
+if uri=$(./find_pluto.sh 2>/dev/null) || uri=$(./find_pluto.sh tx 2>/dev/null) || uri=$(./find_pluto.sh rx 2>/dev/null); then ok "Pluto found at $uri"
 else warn "no Pluto found -- plug it into USB, wait ~20 s, then run ./find_pluto.sh"; fi
 
 echo

@@ -4,7 +4,7 @@
 #   ./run_tx.sh --source-mode test    moving test pattern instead of the camera
 #   ./run_tx.sh --tx-attenuation 20   more output power (longer distance)
 # Any r2_camera_tx.py option can be added (see ./run_tx.sh --help).
-# Uses $PLUTO_URI if set, otherwise finds the board with ./find_pluto.sh.
+# Uses $PLUTO_URI if set, otherwise the board labelled in pluto_boards.conf (./find_pluto.sh).
 set -u
 cd "$(dirname "$0")"
 
@@ -12,7 +12,7 @@ if [[ " $* " == *" --help "* || " $* " == *" -h "* ]]; then
     sed -n '2,7p' "$0"; echo; exec python3 r2_camera_tx.py --help
 fi
 
-URI=$(./find_pluto.sh) || exit 1
+URI=$(./find_pluto.sh tx) || exit 1
 echo "Pluto (TX): $URI"
 
 # Power the TX LO up (a previous run_tx.sh powers it down on exit) ...
