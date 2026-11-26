@@ -99,11 +99,11 @@ def convert(grc_in, grc_out, flow_id, title, params, epy_src):
 def main():
     convert(os.path.join(HERE, '../TX/TX_CAMERA_PC_A.grc'),
             os.path.join(HERE, 'tx_camera.grc'), 'r2_camera_tx',
-            'PlutoSky R2 live camera TX (PC A)', TX_PARAMS,
+            'PlutoSky VTX - Transmitter (PC A)', TX_PARAMS,
             os.path.join(HERE, 'src/tx_video_source.py'))
     convert(os.path.join(HERE, '../RX/RX_VIDEO_PC_B.grc'),
             os.path.join(HERE, 'rx_video.grc'), 'r2_camera_rx',
-            'PlutoSky R2 live video RX (PC B)', RX_PARAMS,
+            'PlutoSky VTX - Receiver (PC B)', RX_PARAMS,
             os.path.join(HERE, 'src/rx_video_receiver.py'))
 
 

@@ -1,118 +1,199 @@
-# Live camera video between two PCs — Linux
+# PlutoSky VTX — live camera video between two PCs (Linux / Pop!_OS)
 
-A Linux port of the `TX/` and `RX/` flowgraphs in this folder (chapter 5 of
-[docs/GNU-Radio-Video-Transmission.md](../../../docs/GNU-Radio-Video-Transmission.md)).
-The DSP, rates and over-the-air packet format are unchanged, so a Linux end also
-works against the original Windows flowgraphs.
+This folder has everything needed to send **live camera video** from one PC to
+another over radio, using **two PlutoSky (PlutoSDR-compatible) boards**. Follow
+the steps below in order on a fresh Pop!_OS 24.04 (or Ubuntu 24.04) PC; no
+other document is needed.
 
 ```
-PC A: camera -> JPEG -> 768-byte CRC packets -> DQPSK (1.024 Msym/s, 4 sps) -> PlutoSky R2-A TX1
-                                   ~2 GHz over the air / cable + attenuator
-PC B: PlutoSky R2-B RX1 -> PFB clock sync -> CMA equalizer -> Costas -> DQPSK decode
-      -> packet CRC + frame reassembly -> live video window
+ PC A  (TRANSMITTER)                                   PC B  (RECEIVER)
+ webcam ─► run_tx.sh ─► Pluto A ──TX1 antenna~~~ 2 GHz ~~~RX1 antenna── Pluto B ─► run_rx.sh ─► video window
 ```
 
-## What is different from the Windows flowgraphs
+- **PC A** has the webcam and Pluto A. It runs `./run_tx.sh`.
+- **PC B** has Pluto B. It runs `./run_rx.sh` and shows the video.
+- Each PC talks only to its own Pluto over USB. The PCs do not need to be on the
+  same network.
 
-| | Windows (`../TX`, `../RX`) | Linux (this folder) |
+---
+
+## What you need
+
+| Item | PC A (transmitter) | PC B (receiver) |
 |---|---|---|
-| Camera | Qt Multimedia | ffmpeg reading V4L2 (`/dev/video0`) when `python3-pyqt5.qtmultimedia` is missing or `--camera-name /dev/videoN` is given; Qt Multimedia otherwise |
-| Settings | edit variables in GRC | command-line flags (below), or edit `tx_camera.grc` / `rx_video.grc` in GRC |
-| TX attenuation default | 10 dB | **30 dB** |
-| TX script | only the `.grc` was provided | `r2_camera_tx.py` generated and ready to run |
+| PC with Pop!_OS 24.04 and internet (for the one-time setup) | ✔ | ✔ |
+| PlutoSky board + USB cable (to the board's **USB2.0/OTG** port, not DEBUG) | Pluto A | Pluto B |
+| Antenna for ~2 GHz | on **TX1** | on **RX1** |
+| USB webcam (or built-in camera) | ✔ | — |
 
-## Requirements (both PCs)
+> **Safety: connect the antennas before running anything.** If you join the two
+> boards with a coax cable instead of antennas, put **at least 30 dB of
+> attenuators** in the cable. Connecting TX straight into RX can overload or damage
+> the receiver.
 
-Ubuntu 22.04/24.04 packages: `gnuradio` (3.10, includes gr-iio), `libiio-utils`,
-`python3-pyqt5`, `python3-yaml`, and on PC A `ffmpeg`.
+---
 
-```
-sudo apt install gnuradio libiio-utils python3-pyqt5 python3-yaml ffmpeg
-```
+## Step 1 — Get the files (do this on BOTH PCs)
 
-Copy this whole `Linux/` folder to both PCs (or clone the repository on both).
+Open a terminal (Super key → type "Terminal") and run:
 
-## 1. Find each board
-
-On each PC, with its PlutoSky R2 connected over USB:
-
-```
-iio_info -s                      # lists the board, e.g. ip:192.168.2.1 or usb:1.5.5
-iio_info -u ip:192.168.2.1 | head
+```bash
+sudo apt install -y git
+git clone -b linux-live-camera https://github.com/siddyyy223/PlutoSky-based-VTX.git
+cd PlutoSky-based-VTX/gnuradio/04_Two-PC-Live-Camera/Linux
 ```
 
-Each PC talks only to its own board, so both PCs can use `ip:192.168.2.1`.
-If both boards are on one LAN instead, give each its own IP and pass that URI.
+(No internet on that PC? On another PC download
+<https://github.com/siddyyy223/PlutoSky-based-VTX/archive/refs/heads/linux-live-camera.zip>,
+copy it over on a USB stick, unzip it, and `cd` into
+`gnuradio/04_Two-PC-Live-Camera/Linux`. Step 2 still needs internet once to
+install packages.)
 
-## 2. Start the receiver on PC B first
+All the commands below are run **from this `Linux` folder**.
 
-```
-cd gnuradio/04_Two-PC-Live-Camera/Linux
-python3 r2_camera_rx.py --rx-uri ip:192.168.2.1 --rx-gain 35
-```
+## Step 2 — Install the software (once per PC, BOTH PCs)
 
-Open the **Live video** tab. The status line shows complete frames, displayed
-frames, bad-CRC packets and lost frames. The *RX Gain* slider can be changed live.
-
-## 3. Start the transmitter on PC A
-
-```
-cd gnuradio/04_Two-PC-Live-Camera/Linux
-python3 r2_camera_tx.py --tx-uri ip:192.168.2.1 --tx-attenuation 30
+```bash
+./setup_pc.sh
 ```
 
-Useful flags:
+It asks for your password once, installs GNU Radio, the Pluto (libiio) tools,
+Qt and ffmpeg, then checks everything. It must end with **`Setup OK`**. If it
+says it added you to the `video` group, log out and log back in once.
 
-| Flag | Default | Meaning |
-|---|---|---|
-| `--freq` | `2.0e9` | carrier, must match on both PCs |
-| `--tx-attenuation` | `30` | dB; lower it (e.g. 10–20) only for longer over-the-air distances |
-| `--camera-name` | `default` | `default` = `/dev/video0`; or `/dev/videoN` |
-| `--source-mode` | `camera` | `test` sends a moving test pattern (no camera needed) |
-| `--video-fps` | `10` | target frame rate; the link carries ~10 fps of 640×360 JPEG |
-| `--jpeg-quality` | `65` | starting quality; it is lowered automatically to stay under 19 KB/frame |
+To re-check later without installing anything: `./setup_pc.sh --check`.
 
-Start with `--source-mode test` to bring the link up first, then switch to the camera.
+## Step 3 — Connect and find each Pluto (BOTH PCs)
 
-**RF levels.** With antennas a metre or two apart, 30 dB TX attenuation and
-35 dB RX gain are a reasonable start. If the boards are joined by a cable,
-use at least 30 dB of external attenuation (or `--tx-attenuation 60` and
-`--rx-gain 10`). Never cable TX straight into RX at low attenuation: it can
-overload or damage the receiver. Watch the received spectrum and the Costas
-constellation: four tight clusters mean the link is locked.
+1. Screw the antenna on (PC A: **TX1**, PC B: **RX1**).
+2. Plug the Pluto into its PC's USB using the **USB2.0/OTG** port. Wait about 20 seconds.
+3. Run:
+   ```bash
+   ./find_pluto.sh
+   ```
+   It prints the board's address, for example `ip:192.168.2.1`. If it says
+   *No Pluto found*, follow the hints it prints.
 
-Stop with the window's close button or Ctrl-C. If the TX script is killed with
-`kill -9` it may leave the board transmitting; mute it with
-`iio_attr -u ip:192.168.2.1 -c ad9361-phy voltage0 hardwaregain -o -89.75`.
+Both PCs can show the same address (`ip:192.168.2.1`). That's normal, because
+each PC sees only its own board.
 
-## Test without hardware
+## Step 4 — Start the RECEIVER first (PC B)
 
+```bash
+./run_rx.sh
 ```
-python3 test_sw_loopback.py                    # moving test pattern, 15 s
+
+A window titled **PlutoSky VTX - Receiver (PC B)** opens. Click the **Live video**
+tab. It says *Waiting for received video...* until the transmitter starts.
+
+## Step 5 — Start the TRANSMITTER (PC A)
+
+The first time, use the built-in test pattern so you can check the radio link
+without the camera:
+
+```bash
+./run_tx.sh --source-mode test
+```
+
+When moving coloured stripes appear on PC B, close the transmitter window and
+start it with the camera:
+
+```bash
+./run_tx.sh
+```
+
+A window titled **PlutoSky VTX - Transmitter (PC A)** opens. Its **Live video**
+tab shows the camera, and PC B now shows the same picture. The drop-down on PC A
+can switch to *Image sent over the air*, which shows exactly what PC B receives.
+
+## Step 6 — Stop
+
+Close the windows (or press Ctrl-C in the terminals). `run_tx.sh` switches the
+transmitter off when it exits. If the transmitter was force-killed, or you're not
+sure it stopped, run `./mute_tx.sh` on PC A.
+
+---
+
+## Reading the receiver window
+
+- **Status line** (under the picture): *Complete video frames* should keep
+  rising. *Bad CRC packets* and *Lost video frames* should stay small.
+- **Receiver constellations (4 stages)** tab: the last plot (after the Costas loop)
+  should show **four tight dots/clusters** when the link is good.
+- **RX Gain** slider (top): adjust it live. Lower it if the picture breaks up
+  with the boards close together; raise it if they are far apart.
+
+## Settings
+
+All settings are options on the run scripts. Nothing has to be edited.
+`./run_tx.sh --help` and `./run_rx.sh --help` list them all.
+
+| Option | Script | Default | Meaning |
+|---|---|---|---|
+| `--freq 2.0e9` | both | 2.0 GHz | radio frequency, **must be the same on both PCs** |
+| `--tx-attenuation 30` | tx | 30 dB | lower number = more power (e.g. 10–20 for longer distances) |
+| `--rx-gain 35` | rx | 35 dB | receiver gain at start (also the live slider) |
+| `--source-mode test` | tx | camera | send a moving test pattern instead of the camera |
+| `--camera-name /dev/video2` | tx | `/dev/video0` | pick another camera (`ls /dev/video*` lists them) |
+| `--video-fps 10` | tx | 10 | frames per second (the link fits about 10 fps of 640×360) |
+| `--jpeg-quality 65` | tx | 65 | starting picture quality; lowered automatically if frames get too big |
+
+Example, longer range at 2.2 GHz:
+
+```bash
+./run_rx.sh --freq 2.2e9 --rx-gain 50        # PC B
+./run_tx.sh --freq 2.2e9 --tx-attenuation 10 # PC A
+```
+
+If the Pluto has a non-default address, give it explicitly:
+`PLUTO_URI=ip:192.168.3.1 ./run_tx.sh`.
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `No Pluto found` | Use the USB2.0/OTG port, wait 20 s, check `ip -br addr` shows a `192.168.2.x` interface, try another cable. |
+| `No camera (/dev/video*) found` | Plug in the webcam, check `ls /dev/video*`, close other programs using it (browser, Zoom, Cheese). |
+| Receiver shows *Waiting for the RF signal* | Transmitter not running, frequencies differ, or antennas not on TX1/RX1. |
+| Picture freezes, many *Bad CRC packets* | Signal too weak (raise RX gain / lower TX attenuation) or too strong (opposite, if boards are close). |
+| Window opens, then Python error mentioning `iio` | The Pluto was unplugged or is still booting; wait and restart. |
+| `setup_pc.sh` shows FAIL | Run `./setup_pc.sh` again (without `--check`) while online, and read the line that failed. |
+
+## How it works (for reference)
+
+- **PC A:** camera → JPEG (640×360, ~10 fps, ≤19 KB/frame) → 796-byte packets,
+  each with sync word, header and CRC32 → differential QPSK, 1.024 Msym/s,
+  4 samples/symbol (4.096 MSPS), RRC 0.35 → Pluto TX1 at 2 GHz.
+- **PC B:** Pluto RX1 → polyphase clock sync → CMA equalizer → Costas loop →
+  DQPSK decode → packet sync + CRC → frame reassembly → live display.
+- The radio format matches the original Windows flowgraphs in `../TX` and `../RX`,
+  so a Linux PC can also talk to a Windows PC running those.
+- Camera on Linux: always read through `ffmpeg` (V4L2) for `default` or a
+  `/dev/videoN` name. A Qt Multimedia camera name is used only if
+  `python3-pyqt5.qtmultimedia` is installed.
+
+## Test without any hardware
+
+```bash
+python3 test_sw_loopback.py                    # test pattern, 15 s
 python3 test_sw_loopback.py --camera default   # real webcam
-python3 test_sw_loopback.py --snr-db 12 --cfo-hz 20e3
 ```
 
-This runs the real TX and RX video blocks and the same DSP chain over a
-simulated channel (AWGN, carrier offset, clock offset). It compares every
-received JPEG byte for byte with the frames the TX sent. Results on the
-development PC (20 dB SNR, 5 kHz CFO, 20 ppm clock offset, 15 s):
+This runs the real transmitter and receiver code over a simulated radio channel
+(noise, frequency and clock offset) and checks every received picture byte for
+byte. It should print `PASS`. Measured: 149/149 frames (test pattern) and
+141/141 frames (webcam) received byte-exact.
 
-| Source | Sent | Received complete | Byte-exact | Bad CRC |
-|---|---|---|---|---|
-| test pattern | 151 | 149 | 149/149 | 0 |
-| USB webcam (ffmpeg/V4L2) | 143 | 141 | 141/141 | 1 |
+## Files in this folder
 
-The frames not received are the first one or two, before the receiver locks.
-
-## Files
-
-| File | Edit? | Contents |
-|---|---|---|
-| `src/tx_video_source.py`, `src/rx_video_receiver.py` | yes | Embedded Python blocks (camera, JPEG, packets, player), Linux port |
-| `build_flowgraphs.py` | yes | Rebuilds the `.grc` and `.py` files below from `../TX`, `../RX` and `src/` |
-| `tx_camera.grc`, `rx_video.grc` | via the build script | GRC flowgraphs; open them in GNU Radio Companion |
-| `r2_camera_tx.py`, `r2_camera_rx.py`, `*_epy_block_*.py` | no (generated) | Runnable scripts |
-| `test_sw_loopback.py` | — | Test without hardware |
-
-After changing anything in `src/`, run `python3 build_flowgraphs.py`.
+| File | What it is |
+|---|---|
+| `setup_pc.sh` | one-time install and check |
+| `find_pluto.sh` | prints the address of the attached Pluto |
+| `run_tx.sh` / `run_rx.sh` | start the transmitter (PC A) / receiver (PC B) |
+| `mute_tx.sh` | emergency stop for the transmitter |
+| `r2_camera_tx.py`, `r2_camera_rx.py`, `*_epy_block_*.py` | the GNU Radio programs (generated, don't edit) |
+| `tx_camera.grc`, `rx_video.grc` | the same flowgraphs for GNU Radio Companion |
+| `src/tx_video_source.py`, `src/rx_video_receiver.py` | camera/packet/player code; after editing run `python3 build_flowgraphs.py` |
+| `build_flowgraphs.py` | rebuilds the `.grc`/`.py` files from `src/` and `../TX`, `../RX` |
+| `test_sw_loopback.py` | hardware-free test |

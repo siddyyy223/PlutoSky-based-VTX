@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: GPL-3.0
 #
 # GNU Radio Python Flow Graph
-# Title: PlutoSky R2 live video RX (PC B)
+# Title: PlutoSky VTX - Receiver (PC B)
 # GNU Radio version: 3.10.9.2
 
 from PyQt5 import Qt
@@ -58,9 +58,9 @@ def snippets_main_after_init(tb):
 class r2_camera_rx(gr.top_block, Qt.QWidget):
 
     def __init__(self, freq=2.0e9, rx_uri='ip:192.168.2.1', rx_gain=35):
-        gr.top_block.__init__(self, "PlutoSky R2 live video RX (PC B)", catch_exceptions=True)
+        gr.top_block.__init__(self, "PlutoSky VTX - Receiver (PC B)", catch_exceptions=True)
         Qt.QWidget.__init__(self)
-        self.setWindowTitle("PlutoSky R2 live video RX (PC B)")
+        self.setWindowTitle("PlutoSky VTX - Receiver (PC B)")
         qtgui.util.check_set_qss()
         try:
             self.setWindowIcon(Qt.QIcon.fromTheme('gnuradio-grc'))

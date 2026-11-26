@@ -152,6 +152,7 @@ class UnitAssembler:
         return session, sequence, raw[4:]
 
 import os
+import sys
 import shutil
 import subprocess
 import threading
@@ -342,7 +343,7 @@ class LiveQtBridge(QtCore.QObject):
             if top is not None and hasattr(top,'monitor_tabs_layout_0'):
                 top.monitor_tabs_layout_0.addWidget(self.panel)
             else:
-                self.panel.setWindowTitle('Live video player (built into the project)')
+                self.panel.setWindowTitle('PlutoSky VTX - live video')
                 self.panel.resize(800,650)
                 self.panel.show()
         self.video_timer=QtCore.QTimer(self)
@@ -379,12 +380,12 @@ class LiveQtBridge(QtCore.QObject):
 
     def _start_camera(self):
         name=self.block._camera
-        if QtMultimedia is None or name.startswith('/dev/'):
+        if QtMultimedia is None or name.startswith('/dev/') or (name.lower()=='default' and sys.platform.startswith('linux')):
             self._start_ffmpeg_camera('/dev/video0' if name.lower()=='default' else name)
             return
         devices=QtMultimedia.QCameraInfo.availableCameras()
         if name.lower()=='default':
-            if not devices:raise RuntimeError('No camera found: check the connection and the Windows camera permission')
+            if not devices:raise RuntimeError('No camera found: check the connection and that no other program is using it')
             info=QtMultimedia.QCameraInfo.defaultCamera()
             if info.isNull():info=devices[0]
         else:
